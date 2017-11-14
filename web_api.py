@@ -7,7 +7,7 @@ if __name__ != '__main__':
 
 from bottle import route, run, default_app, Bottle
 from pyrack import RackConnect, RackObjects
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 
 rackdb = ConfigParser()
 rackdb.readfp(open('rackdb.conf'))
@@ -53,9 +53,9 @@ def with_role(role_id=None, env=None):
 #if __name__ == '__main__':
 @route('/withtag/:tagString')
 def with_tag(tagString):
-    print tagString
+    print (tagString)
     resp = rackobjects.with_tag(tagString)
-    print resp
+    print (resp)
     return {'matches': resp}
 
 run(host='127.0.0.1', port=8282)

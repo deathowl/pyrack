@@ -76,16 +76,16 @@ class _RackAPI:
         networks = [(['%s/%s' % (net[0], net[1]), net[2]]) for net in networks]
         self._cur.execute("""
             SELECT INET_NTOA(ip) from
-            IPv4Allocation where object_id = %s""", (obj_id, ))
+            IPv4Allocation where object_id = %s""" % obj_id)
         try:
             ipv4 = self._cur.fetchall()[0][0]
-            ipv4_obj = ip_address(unicode(ipv4))
+            ipv4_obj = ip_address(ipv4)
             router_sql = """SELECT
                           INET_NTOA(ip)
                           from IPv4Allocation
                           where INET_NTOA(ip)
                           like '%s.%s' AND type = 'shared'
-                          """ % ((".").join(ipv4.split('.')[:+3]), '%')
+                          """ % (".".join(ipv4.split('.')[:+3]), '%')
             self._cur.execute(router_sql)
             routers = self._cur.fetchall()
             if len(routers) == 0:
@@ -98,8 +98,8 @@ class _RackAPI:
                 self._cur.execute(router_sql)
                 routers = self._cur.fetchall()
             for network in networks:
-                if ipv4_obj in ip_network(unicode(network[0])):
-                    ipv4net = ip_network(unicode(network[0]))
+                if ipv4_obj in ip_network(network[0]):
+                    ipv4net = ip_network(network[0])
                     aton = struct.unpack(
                         "!I",
                         inet_aton(ipv4net.network_address.exploded)
@@ -115,7 +115,7 @@ class _RackAPI:
                     vlanq_res = self._cur.fetchone()
                     self._cur.execute("""SELECT vlan_descr FROM
                                    VLANDescription WHERE
-                                   vlan_id = %s""", (vlanq_res,))
+                                   vlan_id = %s""" % vlanq_res)
                     vlannameq_res = self._cur.fetchone()
                     payload = {
                         'subnet': str(ipv4net.netmask),
@@ -123,15 +123,14 @@ class _RackAPI:
                         'ipv4': ipv4,
                         'vlanName': vlannameq_res[0]
                     }
-                    _network = ip_network(unicode(network[0]))
+                    _network = ip_network(network[0])
                     break
             for router in routers:
-                if ip_address(unicode(router[0])) in _network:
+                if ip_address(router[0]) in _network:
                     payload['gateway'] = router[0]
                     break
             return payload
         except Exception as e:
-            print e
             return {
                 'subnet': None, 'network': None,
                 'ipv4': None, 'gateway': None
@@ -173,13 +172,12 @@ class _RackAPI:
             attr_map = self._gen_attr_map()
             network_info = self._ipv4(obj_id)
             for item in resp:
-                print item
                 attr_name = attr_map[item[0]][1]
                 attr_type = attr_map[item[0]][0]
                 obj_mod = self._get_object(obj_id)
                 obj_attr['Asset no'] = obj_mod['asset']
                 obj_attr['Name'] = obj_mod['name']
-                obj_attr['Roles2'] = self._get_roles(obj_id)
+                obj_attr['Roles'] = self._get_roles(obj_id)
                 try:
                     obj_attr['DNS'] = self._get_dns(obj_id)
                 except:
@@ -285,7 +283,6 @@ class _RackAPI:
         self._connect(self._conn)
         searchIDs = [int(obj_id[0]) for obj_id in role_resp]
 
-        #print searchIDs
         query = ("""
             SELECT name, id
             FROM Object
@@ -294,13 +291,9 @@ class _RackAPI:
         query = query % inTransform
         self._cur.execute(query, searchIDs)
         resp = self._cur.fetchall()
-        #print self._cur._last_executed
-        #print resp
         for fqdn in resp:
             fqdns[fqdn[1]] = fqdn[0]
-        #print fqdns
         for role in role_resp:
-          #  print role
             try:
                 roles[role_dict[role[1]]]
             except KeyError:
@@ -319,9 +312,7 @@ class _RackAPI:
                 select string_value from AttributeValue where
                 object_id = %s and attr_id = %s""", (obj_id, self.fqdnID))
             resp = self._cur.fetchone()
-            print self._cur._last_executed
 
-            print resp
             if resp:
                 extraVars = resp[0].split()
                 for var in extraVars:
@@ -331,7 +322,7 @@ class _RackAPI:
 
     def _name_to_id(self, name=None):
         self._connect(self._conn)
-        self._cur.execute("SELECT id FROM Object WHERE name = '%s'", (name, ))
+        self._cur.execute("SELECT id FROM Object WHERE name = '%s'" % name)
         resp = self._cur.fetchone()
         self._cur.close()
         if len(resp) == 0:
@@ -359,9 +350,9 @@ class _RackAPI:
             """, (obj_id, )
         )
         resp = self._cur.fetchall()
-        if ip_address(unicode(resp[0][0])).is_private:
+        if ip_address(resp[0][0]).is_private:
             tag_id = 3
-        if not ip_address(unicode(resp[0][0])).is_private:
+        if not ip_address(resp[0][0]).is_private:
             tag_id = 4
         self._cur.execute("""
             SELECT entity_id from
