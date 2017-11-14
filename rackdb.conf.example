@@ -3,3 +3,5 @@ user = MyUser
 password = SuperSecret
 hostname = localhost
 dbname = racktables
+[racktables]
+object_type_ids = [1,4,3]

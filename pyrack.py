@@ -1,4 +1,4 @@
-#coding=utf-8
+# coding=utf-8
 from ipaddress import ip_address, ip_network
 from pymysql import connect
 import struct
@@ -41,7 +41,7 @@ class _RackAPI:
         self._connect(self._conn)
         self._cur.execute(
             "SELECT dict_value from Dictionary where dict_key = %s",
-            (dict_key, )
+            (dict_key,)
         )
         resp = self._cur.fetchall()
         self._cur.close()
@@ -50,7 +50,7 @@ class _RackAPI:
     def _get_object(self, obj_id):
         self._connect(self._conn)
         self._cur.execute(
-            "SELECT name, asset_no FROM Object where id = %s", (obj_id, )
+            "SELECT name, asset_no FROM Object where id = %s", (obj_id,)
         )
         resp = self._cur.fetchall()
         data = {}
@@ -107,11 +107,11 @@ class _RackAPI:
                     self._cur.execute("""
                         SELECT id FROM IPv4Network
                         WHERE ip = %s
-                        """, (aton, ))
+                        """, (aton,))
                     ipq_res = self._cur.fetchone()
                     self._cur.execute("""SELECT vlan_id FROM
                              VLANIPv4 where ipv4net_id = %s
-                            """, (ipq_res[0], ))
+                            """, (ipq_res[0],))
                     vlanq_res = self._cur.fetchone()
                     self._cur.execute("""SELECT vlan_descr FROM
                                    VLANDescription WHERE
@@ -133,7 +133,7 @@ class _RackAPI:
         except Exception as e:
             return {
                 'subnet': None, 'network': None,
-                'ipv4': None, 'gateway': None
+                'ipv4': None, 'gateway': None, 'vlanName': None
             }
 
     def _gen_role_dict(self):
@@ -151,7 +151,7 @@ class _RackAPI:
         try:
             self._cur.execute(
                 "SELECT tag_id from TagStorage where entity_id = %s",
-                (obj_id, )
+                (obj_id,)
             )
             resp = self._cur.fetchall()
         except:
@@ -165,7 +165,7 @@ class _RackAPI:
         self._connect(self._conn)
         self._cur.execute("""
             SELECT attr_id, string_value, uint_value
-            from AttributeValue where object_id = %s""", (obj_id, ))
+            from AttributeValue where object_id = %s""", (obj_id,))
         resp = self._cur.fetchall()
         if len(resp) > 0:
             obj_attr = {}
@@ -194,7 +194,7 @@ class _RackAPI:
                     try:
                         obj_attr[attr_name] = obj_attr[attr_name].split("%")[2]
                     except:
-#                        obj_attr[attr_name] = self._get_dict(item[2])[0]
+                        #                        obj_attr[attr_name] = self._get_dict(item[2])[0]
                         pass
                 else:
                     try:
@@ -216,7 +216,7 @@ class _RackAPI:
     def _get_tag_id(self, tagString):
         self._connect(self._conn)
         self._cur.execute(
-            'select id from TagTree where tag = %s', (tagString, )
+            'select id from TagTree where tag = %s', (tagString,)
         )
         resp = self._cur.fetchone()
         if resp:
@@ -226,11 +226,11 @@ class _RackAPI:
 
     def _with_tag(self, tagString):
         tagID = self._get_tag_id(tagString)
-#        tagList = []
+        #        tagList = []
         if tagID is not None:
             self._cur.execute(
                 'select entity_id from TagStorage where tag_id = %s',
-                (tagID, )
+                (tagID,)
             )
             tresp = self._cur.fetchall()
         else:
@@ -248,16 +248,16 @@ class _RackAPI:
         else:
             withTagResp = []
         if len(withTagResp) > 0:
-            return([name[0] for name in withTagResp])
+            return ([name[0] for name in withTagResp])
         else:
-            return([])
+            return ([])
 
     def _with_role(self, role_id=None, environment=None):
         role_dict = self._gen_role_dict()
         self._connect(self._conn)
         self._cur.execute(
             "SELECT dict_key from Dictionary where dict_value = %s",
-            (environment, )
+            (environment,)
         )
         env_resp = self._cur.fetchall()
         if len(env_resp) == 0:
@@ -335,7 +335,7 @@ class _RackAPI:
             SELECT object_id FROM AttributeValue WHERE string_value = '%s'
             and attr_id = %s
             """, (fqdn, self.ansibleTag)
-        )
+                          )
         resp = self._cur.fetchone()
         self._cur.close()
         if len(resp) == 0:
@@ -347,8 +347,8 @@ class _RackAPI:
         self._cur.execute("""
             SELECT INET_NTOA(ip) from
             IPv4Allocation where object_id = %s
-            """, (obj_id, )
-        )
+            """, (obj_id,)
+                          )
         resp = self._cur.fetchall()
         if ip_address(resp[0][0]).is_private:
             tag_id = 3
@@ -357,22 +357,34 @@ class _RackAPI:
         self._cur.execute("""
             SELECT entity_id from
             TagStorage where tag_id = %s
-            """, (tag_id, )
-        )
+            """, (tag_id,)
+                          )
         resp = self._cur.fetchall()
-        #obj_list = ["object_id = %s" % obj[0] for obj in resp]
+        # obj_list = ["object_id = %s" % obj[0] for obj in resp]
         obj_list = [obj[0] for obj in resp]
         inTransform = ', '.join(map(lambda x: '%s', obj_list))
-        #with_ors = " OR ".join(obj_list)
-        query = ("""
+        # with_ors = " OR ".join(obj_list)
+        query = """
             SELECT INET_NTOA(ip) FROM
             IPv4Allocation WHERE %s object_id in (%s)
-        """)
+        """
         query = query % inTransform
         self._cur.execute(query, obj_list)
         resp = self._cur.fetchall()
         self._cur.close()
         return [ipv4[0] for ipv4 in resp]
+
+    def list_objects(self, object_type_ids):
+        self._connect(self._conn)
+        result = {}
+        in_transform = ', '.join(map(lambda x: '%s', object_type_ids))
+        query = """select name, id from Object where objtype_id in (%s)"""  % in_transform
+        self._cur.execute(query, object_type_ids)
+        objects = self._cur.fetchall()
+        result["objects"] = []
+        for obj in objects:
+            result["objects"].append({"name": obj[0], "href": "/facts/%s" % obj[1]})
+        return result
 
 
 class RackConnect(_RackAPI):
@@ -397,12 +409,15 @@ class RackObjects(object):
 
     def obj_attr(self, obj_id=None):
         if not isinstance(obj_id, int):
-            return("Object ID must be an integer")
+            return ("Object ID must be an integer")
         elif isinstance(obj_id, int):
             return self.rack._get_attributes(obj_id)
 
     def with_tag(self, tagString):
-        return(self.rack._with_tag(tagString))
+        return (self.rack._with_tag(tagString))
 
     def with_role(self, role_id=None, environment=None):
         return self.rack._with_role(role_id=role_id, environment=environment)
+
+    def list(self, object_type_ids):
+        return self.rack.list_objects(object_type_ids)

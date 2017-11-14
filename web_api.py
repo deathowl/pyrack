@@ -1,13 +1,15 @@
 #coding=utf-8
+from bottle import route, run, default_app, Bottle
+from pyrack import RackConnect, RackObjects
+from configparser import ConfigParser
+import json
+
 if __name__ != '__main__':
     from sys import path as syspath
     from os import path, chdir
     syspath.append(path.dirname(__file__))
     chdir(path.dirname(__file__))
 
-from bottle import route, run, default_app, Bottle
-from pyrack import RackConnect, RackObjects
-from configparser import ConfigParser
 
 rackdb = ConfigParser()
 rackdb.readfp(open('rackdb.conf'))
@@ -15,6 +17,7 @@ db_host = rackdb.get('mysql', 'hostname')
 db_user = rackdb.get('mysql', 'user')
 db_pass = rackdb.get('mysql', 'password')
 db_name = rackdb.get('mysql', 'dbname')
+object_type_ids = json.loads(rackdb.get('racktables', 'object_type_ids'))
 
 rackdoc = RackConnect(
     mysql_host=db_host,
@@ -27,9 +30,13 @@ app = Bottle()
 
 
 @route('/facts/:obj_id')
-def facts(obj_id=None):
+def fact(obj_id=None):
     obj_id = int(obj_id)
     return rackobjects.obj_attr(obj_id)
+
+@route('/facts')
+def facts():
+    return rackobjects.list(object_type_ids)
 
 
 @route('/name/:name')
