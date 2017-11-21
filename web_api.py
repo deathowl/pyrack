@@ -1,7 +1,7 @@
 #coding=utf-8
 from bottle import route, run, default_app, Bottle
 from pyrack import RackConnect, RackObjects
-from configparser import ConfigParser
+import os
 import json
 
 if __name__ != '__main__':
@@ -11,13 +11,11 @@ if __name__ != '__main__':
     chdir(path.dirname(__file__))
 
 
-rackdb = ConfigParser()
-rackdb.readfp(open('rackdb.conf'))
-db_host = rackdb.get('mysql', 'hostname')
-db_user = rackdb.get('mysql', 'user')
-db_pass = rackdb.get('mysql', 'password')
-db_name = rackdb.get('mysql', 'dbname')
-object_type_ids = json.loads(rackdb.get('racktables', 'object_type_ids'))
+db_host = os.getenv("MYSQL_HOST")
+db_user = os.getenv("MYSQL_USER")
+db_pass = os.getenv("MYSQL_PASS")
+db_name = os.getenv("MYSQL_DB")
+object_type_ids = json.loads(os.getenv("RACKTABLES_TYPE_IDS"))
 
 rackdoc = RackConnect(
     mysql_host=db_host,
