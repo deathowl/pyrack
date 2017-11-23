@@ -15,6 +15,8 @@ db_host = os.getenv("MYSQL_HOST")
 db_user = os.getenv("MYSQL_USER")
 db_pass = os.getenv("MYSQL_PASS")
 db_name = os.getenv("MYSQL_DB")
+listen_addr = os.getenv("LISTEN_ADDR", "127.0.0.1")
+listen_port = int(os.getenv("LISTEN_PORT", "8282"))
 object_type_ids = json.loads(os.getenv("RACKTABLES_TYPE_IDS"))
 
 rackdoc = RackConnect(
@@ -63,6 +65,6 @@ def with_tag(tagString):
     print (resp)
     return {'matches': resp}
 
-run(host='127.0.0.1', port=8282)
+run(host=listen_addr, port=listen_port)
 #if __name__ != '__main__':
 #    application = default_app()
